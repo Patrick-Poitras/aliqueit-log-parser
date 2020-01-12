@@ -16,15 +16,15 @@ Anaconda with Python 3 has all those included and more. I recommend using that.
 modify it a bit.)
 
 Licensing: Do what you want with it, but if you modify the code, at least mention
-that it's based or inspired by this work. (CC-BY 4.0)
+that it's based on or inspired by this work. (CC-BY 4.0)
 """
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.optimize
 
 #For saving the figure
-SAVE_FIGURE = True
-FILENAME = "blah.png"
+SAVE_FIGURE = False
+FILENAME = "graph.png"
 DPI = 900
 
 #For zooming on the crossover point
@@ -38,6 +38,12 @@ def fitfunc_gnfs(x,a,b,c,d):
 
 def fitfunc_siqs(x,a,b,c,d,e,f):
     return a*np.exp((x-c)*b) + d + e*np.log10(np.abs(x*f))
+
+#These are the original parameter guesses for the curve fit, it must have
+#the same number of elements as the number of parameters (not counting x) in the
+# fit function above
+p0_gnfs = (1.38,0.03,0,0)
+p0_siqs = (1.38,0.03,0,0,0,1)
 
 #################Code start#######################
 f = open("aliqueit.log")
@@ -117,10 +123,9 @@ print("NFS points:", len(timestamps))
 print("SIQS points:", len(siqs_ts), " ({0} >= 80)".format(len([i for i in siqs_ts if i[0]>=80])))
 
 xx = np.linspace(92,1.01*max([i[0] for i in timestamps]))
-h = scipy.optimize.curve_fit(fitfunc_gnfs,np.array([i[0] for i in timestamps]),np.array([i[1] for i in timestamps]),p0=(1.38,0.03,0,0))
-#h = scipy.optimize.curve_fit(gnfs_actual,np.array([i[0] for i in timestamps]),np.array([i[1] for i in timestamps]),p0=(1.38,0.03,0,0))
+h = scipy.optimize.curve_fit(fitfunc_gnfs,np.array([i[0] for i in timestamps]),np.array([i[1] for i in timestamps]),p0=p0_gnfs)
 
-l = scipy.optimize.curve_fit(fitfunc_siqs,np.array([i[0] for i in siqs_ts if i[0] > 60]), np.array([i[1] for i in siqs_ts if i[0] > 60]), p0=(1.38,0.03,0,0,0,1),maxfev=10000)
+l = scipy.optimize.curve_fit(fitfunc_siqs,np.array([i[0] for i in siqs_ts if i[0] > 60]), np.array([i[1] for i in siqs_ts if i[0] > 60]), p0=p0_siqs,maxfev=10000)
 plt.scatter([i[0] for i in timestamps],[i[1] for i in timestamps],color='red',alpha=0.3)
 plt.scatter([i[0] for i in siqs_ts], [i[1] for i in siqs_ts], color='blue',alpha=0.3)
 plt.plot(xx,fitfunc_gnfs(xx,*h[0]),color='green',linestyle='--')
@@ -132,9 +137,12 @@ plt.yticks(60*np.array([1,2,3,4,5,10,20,30,40,50,60,120,180,4*60,5*60,10*60]),["
 plt.xlabel("log10(n)")
 
 if not ZOOM:
-    plt.xticks([80,85,90,95,100,105,110,115,120],[80,None,90,None,100,None,110,None,120]);plt.xlim(80,None);plt.ylim(50,None)
+    plt.xticks([80,85,90,95,100,105,110,115,120],[80,None,90,None,100,None,110,None,120])
+    plt.xlim(80,None)
+    plt.ylim(50,None)
 else:
-    plt.xlim(*ZOOM_X_LIMITS);plt.ylim(*ZOOM_Y_LIMITS)
+    plt.xlim(*ZOOM_X_LIMITS)
+    plt.ylim(*ZOOM_Y_LIMITS)
     
 if SAVE_FIGURE:
     plt.savefig(FILENAME,dpi=DPI)
