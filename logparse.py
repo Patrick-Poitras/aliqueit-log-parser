@@ -24,26 +24,32 @@ import scipy.optimize
 
 #For saving the figure
 SAVE_FIGURE = False
-FILENAME = "graph.png"
-DPI = 900
+FILENAME = "graph_zoomed.png"
+DPI = 600
 
 #For zooming on the crossover point
 ZOOM = False
 ZOOM_X_LIMITS = (94,99)
-ZOOM_Y_LIMITS = (1000,3500)
+ZOOM_Y_LIMITS = (1000,3600)
+
+#Graph parameters
+XTICK_POSITION = [80,85,90,95,100,105,110,115,120,125,130,135,140]
+XTICK_LABELS = [80,None,90,None,100,None,110,None,120,None,130,None,140]
+YTICK_LABELS = ["1m","2m",None,None,"5m","10m","20m","30m",None,None,"1h","2h","3h",None,"5h","10h","1d","2d",None,"4d"]
+YTICK_POSITION = 60*np.array([1,2,3,4,5,10,20,30,40,50,60,120,180,4*60,5*60,10*60,24*60,48*60,24*60*3,24*60*4])
 
 #Functions for the curve fits
 def fitfunc_gnfs(x,a,b,c,d):
     return a*np.exp((x-c)*b) + d
 
-def fitfunc_siqs(x,a,b,c,d,e,f):
-    return a*np.exp((x-c)*b) + d + e*np.log10(np.abs(x*f))
+def fitfunc_siqs(x,a,b,c,d,e,f,g,h):
+    return a*np.exp((x-c)*b) + e*np.log10(np.abs(x*f)) + d 
 
 #These are the original parameter guesses for the curve fit, it must have
 #the same number of elements as the number of parameters (not counting x) in the
 # fit function above
 p0_gnfs = (1.38,0.03,0,0)
-p0_siqs = (1.38,0.03,0,0,0,1)
+p0_siqs = (1.38,0.04,0,0,1,1,60,1)
 
 #################Code start#######################
 f = open("aliqueit.log")
@@ -122,24 +128,26 @@ for i in v:
 print("NFS points:", len(timestamps))
 print("SIQS points:", len(siqs_ts), " ({0} >= 80)".format(len([i for i in siqs_ts if i[0]>=80])))
 
-xx = np.linspace(92,1.01*max([i[0] for i in timestamps]))
+#xx = np.linspace(92,1.01*max([i[0] for i in timestamps]),500)
+xx = np.linspace(92,140,1000)
 h = scipy.optimize.curve_fit(fitfunc_gnfs,np.array([i[0] for i in timestamps]),np.array([i[1] for i in timestamps]),p0=p0_gnfs)
 
 l = scipy.optimize.curve_fit(fitfunc_siqs,np.array([i[0] for i in siqs_ts if i[0] > 60]), np.array([i[1] for i in siqs_ts if i[0] > 60]), p0=p0_siqs,maxfev=10000)
 plt.scatter([i[0] for i in timestamps],[i[1] for i in timestamps],color='red',alpha=0.3)
 plt.scatter([i[0] for i in siqs_ts], [i[1] for i in siqs_ts], color='blue',alpha=0.3)
 plt.plot(xx,fitfunc_gnfs(xx,*h[0]),color='green',linestyle='--')
-xx = np.linspace(75,100,500)
+xx = np.linspace(80,100,500)
 plt.plot(xx,fitfunc_siqs(xx,*l[0]),color='magenta',linestyle='--')
 plt.grid()
 plt.yscale("log",subsy=3600*np.array([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]))
-plt.yticks(60*np.array([1,2,3,4,5,10,20,30,40,50,60,120,180,4*60,5*60,10*60]),["1m","2m",None,None,"5m","10m","20m","30m",None,None,"1h","2h","3h",None,"5h","10h"])
+plt.yticks(YTICK_POSITION,YTICK_LABELS)
+#plt.yticks(60*np.array([1,2,3,4,5,10,20,30,40,50,60,120,180,4*60,5*60,10*60,24*60]),["1m","2m",None,None,"5m","10m","20m","30m",None,None,"1h","2h","3h",None,"5h","10h","1d"])
 plt.xlabel("log10(n)")
 
 if not ZOOM:
-    plt.xticks([80,85,90,95,100,105,110,115,120],[80,None,90,None,100,None,110,None,120])
+    plt.xticks(XTICK_POSITION, XTICK_LABELS)
     plt.xlim(80,None)
-    plt.ylim(50,None)
+    plt.ylim(0,None)
 else:
     plt.xlim(*ZOOM_X_LIMITS)
     plt.ylim(*ZOOM_Y_LIMITS)
