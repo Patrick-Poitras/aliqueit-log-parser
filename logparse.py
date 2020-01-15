@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Dec 29 16:37:35 2019
+Version 0.2 -- 2020-01-15
 
 This script parses aliqueit logs in order to obtain a scatter plot of the 
 time spent factoring as a function of the base-10 logarithm. Two log/linear fits
@@ -26,6 +26,11 @@ import scipy.optimize
 SAVE_FIGURE = False
 FILENAME = "graph_zoomed.png"
 DPI = 600
+
+#Data ranges for curve fitting
+enable_fits = True #will disable fitting entirely if false
+range_siqs = np.linspace(80,100,500)
+range_gnfs = np.linspace(92,140,1000)
 
 #For zooming on the crossover point
 ZOOM = False
@@ -128,16 +133,16 @@ for i in v:
 print("NFS points:", len(timestamps))
 print("SIQS points:", len(siqs_ts), " ({0} >= 80)".format(len([i for i in siqs_ts if i[0]>=80])))
 
-#xx = np.linspace(92,1.01*max([i[0] for i in timestamps]),500)
-xx = np.linspace(92,140,1000)
-h = scipy.optimize.curve_fit(fitfunc_gnfs,np.array([i[0] for i in timestamps]),np.array([i[1] for i in timestamps]),p0=p0_gnfs)
-
-l = scipy.optimize.curve_fit(fitfunc_siqs,np.array([i[0] for i in siqs_ts if i[0] > 60]), np.array([i[1] for i in siqs_ts if i[0] > 60]), p0=p0_siqs,maxfev=10000)
 plt.scatter([i[0] for i in timestamps],[i[1] for i in timestamps],color='red',alpha=0.3)
 plt.scatter([i[0] for i in siqs_ts], [i[1] for i in siqs_ts], color='blue',alpha=0.3)
-plt.plot(xx,fitfunc_gnfs(xx,*h[0]),color='green',linestyle='--')
-xx = np.linspace(80,100,500)
-plt.plot(xx,fitfunc_siqs(xx,*l[0]),color='magenta',linestyle='--')
+if len(timestamps) > 0 and enable_fits:
+    h = scipy.optimize.curve_fit(fitfunc_gnfs,np.array([i[0] for i in timestamps]),np.array([i[1] for i in timestamps]),p0=p0_gnfs)
+    plt.plot(range_gnfs,fitfunc_gnfs(range_gnfs,*h[0]),color='green',linestyle='--')
+
+if len(siqs_ts) > 0 and enable_fits:
+    l = scipy.optimize.curve_fit(fitfunc_siqs,np.array([i[0] for i in siqs_ts if i[0] > 60]), np.array([i[1] for i in siqs_ts if i[0] > 60]), p0=p0_siqs,maxfev=10000)
+    plt.plot(range_siqs,fitfunc_siqs(range_siqs,*l[0]),color='magenta',linestyle='--')
+
 plt.grid()
 plt.yscale("log",subsy=3600*np.array([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]))
 plt.yticks(YTICK_POSITION,YTICK_LABELS)
@@ -147,7 +152,7 @@ plt.xlabel("log10(n)")
 if not ZOOM:
     plt.xticks(XTICK_POSITION, XTICK_LABELS)
     plt.xlim(80,None)
-    plt.ylim(0,None)
+    plt.ylim(60, None)
 else:
     plt.xlim(*ZOOM_X_LIMITS)
     plt.ylim(*ZOOM_Y_LIMITS)
