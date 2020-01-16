@@ -56,7 +56,6 @@ def fitfunc_siqs(x,a,b,c,d,e,f,g,h):
 p0_gnfs = (1.38,0.03,0,0)
 p0_siqs = (1.38,0.04,0,0,1,1,60,1)
 
-#################################################################################
 #################Code start#######################
 f = open("aliqueit.log")
 L = []
@@ -165,8 +164,8 @@ if not ZOOM:
 else:
     plt.xlim(*ZOOM_X_LIMITS)
     plt.ylim(*ZOOM_Y_LIMITS)
-    
-plt.show()
 
 if SAVE_FIGURE:
     plt.savefig(FILENAME,dpi=DPI)
+    
+plt.show()
