@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Version 0.2 -- 2020-01-15
+Version 0.3 -- 2020-01-16
 
 This script parses aliqueit logs in order to obtain a scatter plot of the 
 time spent factoring as a function of the base-10 logarithm. Two log/linear fits
@@ -23,8 +23,8 @@ import matplotlib.pyplot as plt
 import scipy.optimize
 
 #For saving the figure
-SAVE_FIGURE = False
-FILENAME = "graph_zoomed.png"
+SAVE_FIGURE = True
+FILENAME = "graph.png"
 DPI = 600
 
 #Data ranges for curve fitting
@@ -56,6 +56,7 @@ def fitfunc_siqs(x,a,b,c,d,e,f,g,h):
 p0_gnfs = (1.38,0.03,0,0)
 p0_siqs = (1.38,0.04,0,0,1,1,60,1)
 
+#################################################################################
 #################Code start#######################
 f = open("aliqueit.log")
 L = []
@@ -135,13 +136,21 @@ print("SIQS points:", len(siqs_ts), " ({0} >= 80)".format(len([i for i in siqs_t
 
 plt.scatter([i[0] for i in timestamps],[i[1] for i in timestamps],color='red',alpha=0.3)
 plt.scatter([i[0] for i in siqs_ts], [i[1] for i in siqs_ts], color='blue',alpha=0.3)
-if len(timestamps) > 0 and enable_fits:
-    h = scipy.optimize.curve_fit(fitfunc_gnfs,np.array([i[0] for i in timestamps]),np.array([i[1] for i in timestamps]),p0=p0_gnfs)
-    plt.plot(range_gnfs,fitfunc_gnfs(range_gnfs,*h[0]),color='green',linestyle='--')
 
-if len(siqs_ts) > 0 and enable_fits:
-    l = scipy.optimize.curve_fit(fitfunc_siqs,np.array([i[0] for i in siqs_ts if i[0] > 60]), np.array([i[1] for i in siqs_ts if i[0] > 60]), p0=p0_siqs,maxfev=10000)
-    plt.plot(range_siqs,fitfunc_siqs(range_siqs,*l[0]),color='magenta',linestyle='--')
+try:
+    if len(siqs_ts) > len(p0_siqs) and enable_fits:
+        l = scipy.optimize.curve_fit(fitfunc_siqs,np.array([i[0] for i in siqs_ts if i[0] > 60]), np.array([i[1] for i in siqs_ts if i[0] > 60]), p0=p0_siqs,maxfev=10000)
+        plt.plot(range_siqs,fitfunc_siqs(range_siqs,*l[0]),color='magenta',linestyle='--')
+    elif enable_fits:
+        print("Too few points for fitting SIQS")
+    if len(timestamps) > len(p0_gnfs) and enable_fits:
+        h = scipy.optimize.curve_fit(fitfunc_gnfs,np.array([i[0] for i in timestamps]),np.array([i[1] for i in timestamps]),p0=p0_gnfs)
+        plt.plot(range_gnfs,fitfunc_gnfs(range_gnfs,*h[0]),color='green',linestyle='--')
+    elif enable_fits:
+        print("Too few points for fitting NFS")
+except TypeError:
+    print("Error encountered when doing the curve fit")
+
 
 plt.grid()
 plt.yscale("log",subsy=3600*np.array([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]))
@@ -157,5 +166,7 @@ else:
     plt.xlim(*ZOOM_X_LIMITS)
     plt.ylim(*ZOOM_Y_LIMITS)
     
+plt.show()
+
 if SAVE_FIGURE:
     plt.savefig(FILENAME,dpi=DPI)
