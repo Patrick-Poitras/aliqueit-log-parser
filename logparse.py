@@ -17,6 +17,9 @@ modify it a bit.)
 
 Licensing: Do what you want with it, but if you modify the code, at least mention
 that it's based on or inspired by this work. (CC-BY 4.0)
+
+Disclaimer: The code features some code that is only declared for graph 
+display purposes.
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -38,10 +41,12 @@ ZOOM_X_LIMITS = (94,99)
 ZOOM_Y_LIMITS = (1000,3600)
 
 #Graph parameters
-XTICK_POSITION = [80,85,90,95,100,105,110,115,120,125,130,135,140]
+XTICK_POSITION = list(range(80,140,5))
 XTICK_LABELS = [80,None,90,None,100,None,110,None,120,None,130,None,140]
-YTICK_LABELS = ["1m","2m",None,None,"5m","10m","20m","30m",None,None,"1h","2h","3h",None,"5h","10h","1d","2d",None,"4d"]
-YTICK_POSITION = 60*np.array([1,2,3,4,5,10,20,30,40,50,60,120,180,4*60,5*60,10*60,24*60,48*60,24*60*3,24*60*4])
+YTICK_LABELS = ["1m","2m",None,None,"5m","10m","20m","30m",None,None,"1h","2h","3h",
+                None,"5h","10h","1d","2d",None,"4d"]
+YTICK_POSITION = 60*np.array([1,2,3,4,5,10,20,30,40,50,60,120,180,
+                              4*60,5*60,10*60,24*60,48*60,24*60*3,24*60*4])
 
 #Functions for the curve fits
 def fitfunc_gnfs(x,a,b,c,d):
@@ -63,6 +68,7 @@ for line in f:
     L.append(line) 
 f.close()
 
+## Parser for events from the log. 
 events = []
 for i in L:
     if "Starting factorization of" in i:
@@ -136,14 +142,23 @@ print("SIQS points:", len(siqs_ts), " ({0} >= 80)".format(len([i for i in siqs_t
 plt.scatter([i[0] for i in timestamps],[i[1] for i in timestamps],color='red',alpha=0.3)
 plt.scatter([i[0] for i in siqs_ts], [i[1] for i in siqs_ts], color='blue',alpha=0.3)
 
+# Curve fitting
 try:
     if len(siqs_ts) > len(p0_siqs) and enable_fits:
-        l = scipy.optimize.curve_fit(fitfunc_siqs,np.array([i[0] for i in siqs_ts if i[0] > 60]), np.array([i[1] for i in siqs_ts if i[0] > 60]), p0=p0_siqs,maxfev=10000)
+        l = scipy.optimize.curve_fit(fitfunc_siqs, 
+                                     np.array([i[0] for i in siqs_ts if i[0] > 60]),
+                                     np.array([i[1] for i in siqs_ts if i[0] > 60]),
+                                     p0=p0_siqs,maxfev=10000)
+       
         plt.plot(range_siqs,fitfunc_siqs(range_siqs,*l[0]),color='magenta',linestyle='--')
+    
     elif enable_fits:
         print("Too few points for fitting SIQS")
     if len(timestamps) > len(p0_gnfs) and enable_fits:
-        h = scipy.optimize.curve_fit(fitfunc_gnfs,np.array([i[0] for i in timestamps]),np.array([i[1] for i in timestamps]),p0=p0_gnfs)
+        h = scipy.optimize.curve_fit(fitfunc_gnfs,
+                                     np.array([i[0] for i in timestamps]),
+                                     np.array([i[1] for i in timestamps]),
+                                     p0=p0_gnfs)
         plt.plot(range_gnfs,fitfunc_gnfs(range_gnfs,*h[0]),color='green',linestyle='--')
     elif enable_fits:
         print("Too few points for fitting NFS")
@@ -154,7 +169,6 @@ except TypeError:
 plt.grid()
 plt.yscale("log",subsy=3600*np.array([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]))
 plt.yticks(YTICK_POSITION,YTICK_LABELS)
-#plt.yticks(60*np.array([1,2,3,4,5,10,20,30,40,50,60,120,180,4*60,5*60,10*60,24*60]),["1m","2m",None,None,"5m","10m","20m","30m",None,None,"1h","2h","3h",None,"5h","10h","1d"])
 plt.xlabel("log10(n)")
 
 if not ZOOM:
